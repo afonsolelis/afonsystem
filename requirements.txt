@@ -1,0 +1,10 @@
+streamlit
+pandas
+sqlalchemy
+psycopg2-binary
+python-dotenv
+plotly
+clickhouse_connect
+pygithub
+duckdb
+matplotlib
