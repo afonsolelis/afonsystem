@@ -27,7 +27,7 @@ def query_dataframe(query):
         return pd.DataFrame()
 
 # --- Filtro por Ano-Trimestre ---
-ano_trimestres = ["2024-1A", "2024-1B", "2024-2A", "2024-2B", "2025-1A"]
+ano_trimestres = ["2024-1A", "2024-1B", "2024-2A", "2024-2B", "2025-1A", "2025-1B"]
 selected_trimestre = st.selectbox("Selecione o Ano-Trimestre", ano_trimestres)
 
 # Função para carregar os repositórios baseando-se no ano-trimestre
