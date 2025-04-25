@@ -23,9 +23,7 @@ def fetch_repositories(client: Github) -> list[str]:
     return [
         repo.full_name
         for repo in user.get_repos()
-        if '2025-1B-T10' in repo.full_name
-           and 'PUBLICO' not in repo.full_name
-           and 'INTERNO' not in repo.full_name
+        if 'INTERNO' in repo.full_name
     ]
 
 def get_all_commits(repo_name: str, client: Github) -> list[dict]:
