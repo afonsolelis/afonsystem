@@ -156,6 +156,7 @@ if st.sidebar.button("Executar Análise"):
             )
             ORDER BY author
             """
+            print(query2)
             df2 = conn.execute(query2).fetchdf()
 
             if not df2.empty:
