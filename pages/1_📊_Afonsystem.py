@@ -116,13 +116,23 @@ if start_date and end_date:
           AND message LIKE 'fix:%'
     """).iloc[0]['total']
     
-    col1, col2, col3 = st.columns(3)
+    docs_commits = query_dataframe(f"""
+        SELECT COUNT(*) as total 
+        FROM commits 
+        WHERE repo_name = '{selected_repo}'
+          AND date >= '{start_date}' AND date <= '{end_date}'
+          AND message LIKE 'docs:%'
+    """).iloc[0]['total']
+    
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total de Commits", total_commits)
     with col2:
         st.metric("Commits 'feat'", feat_commits)
     with col3:
         st.metric("Commits 'fix'", fix_commits)
+    with col4:
+        st.metric("Commits 'docs'", docs_commits)
 else:
     st.write("Não há filtro de data definido para os KPIs.")
 
@@ -167,13 +177,13 @@ if not commits_by_author.empty:
 else:
     st.info("Não há dados suficientes para o gráfico de commits por autor.")
 
-# Gráfico de Pizza: Distribuição de Commits por Tipo (feat, fix, other)
-# Adaptação da consulta para DuckDB (sintaxe pode ser diferente)
+# Gráfico de Pizza: Distribuição de Commits por Tipo (feat, fix, docs, other)
 commits_by_type_query = f"""
     SELECT 
         CASE
             WHEN message LIKE 'feat:%' THEN 'feat'
             WHEN message LIKE 'fix:%' THEN 'fix'
+            WHEN message LIKE 'docs:%' THEN 'docs'
             ELSE 'other'
         END as commit_type,
         COUNT(*) as quantidade
