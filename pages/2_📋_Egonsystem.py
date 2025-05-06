@@ -156,7 +156,6 @@ if st.sidebar.button("Executar Análise"):
             )
             ORDER BY author
             """
-            print(query2)
             df2 = conn.execute(query2).fetchdf()
 
             if not df2.empty:
@@ -173,26 +172,28 @@ if st.sidebar.button("Executar Análise"):
             SELECT 
                 author,
                 repo_name,
-                date AS commit_date,
+                CAST(date AS DATE) AS commit_date,
                 message
             FROM commits
             WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
             AND author NOT IN ('Inteli Hub', 'José Romualdo')
-            AND date >= '{end_datetime}'
+            AND CAST(date AS DATE) >= CAST('{end_datetime}' AS DATE)
             AND author IN (
                 SELECT DISTINCT author
                 FROM commits
                 WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                AND date >= '{end_datetime}'
+                AND CAST(date AS DATE) >= CAST('{end_datetime}' AS DATE)
                 AND author NOT IN (
                     SELECT DISTINCT author
                     FROM commits
                     WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                    AND date >= '{start_datetime}' AND date < '{end_datetime}'
+                    AND CAST(date AS DATE) BETWEEN CAST('{start_datetime}' AS DATE) AND CAST('{end_datetime}' AS DATE)
                 )
             )
-            ORDER BY date DESC
+            ORDER BY CAST(date AS DATE) DESC
             """
+            print(1)
+            print(query3_commits)
             df_commits = conn.execute(query3_commits).fetchdf()
 
             if not df_commits.empty:
@@ -227,6 +228,8 @@ if st.sidebar.button("Executar Análise"):
                 WHERE c.author NOT IN ('Inteli Hub', 'José Romualdo')
                 ORDER BY c.repo_name, c.author
                 """
+                print(2)
+                print(query3)
                 df3 = conn.execute(query3).fetchdf()
 
                 if not df3.empty:
