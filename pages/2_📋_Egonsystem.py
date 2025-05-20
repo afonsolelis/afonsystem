@@ -49,28 +49,44 @@ if st.sidebar.button("Executar Análise"):
             st.header("Autores com Commits Dentro do Prazo")
 
             query1 = f"""
-            SELECT 
-                t1.repo_name,
-                t1.author,
-                CAST(t1.date AS TIMESTAMP) AS commit_date,
-                t1.message
-            FROM commits t1
-            JOIN (
+            WITH commits_no_prazo AS (
                 SELECT 
-                    repo_name, 
-                    MAX(CAST(date AS TIMESTAMP)) AS max_date
+                    t1.repo_name,
+                    t1.author,
+                    CAST(t1.date AS TIMESTAMP) AS commit_date,
+                    t1.message
+                FROM commits t1
+                JOIN (
+                    SELECT 
+                        repo_name, 
+                        MAX(CAST(date AS TIMESTAMP)) AS max_date
+                    FROM commits
+                    WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
+                    AND CAST(date AS TIMESTAMP) >= TIMESTAMP '2025-05-05 00:00:00'
+                    AND CAST(date AS TIMESTAMP) <= TIMESTAMP '2025-05-17 03:00:00'
+                    AND author NOT IN ('Inteli Hub', 'José Romualdo')
+                    GROUP BY repo_name
+                ) t2 
+                ON t1.repo_name = t2.repo_name 
+            AND CAST(t1.date AS TIMESTAMP) = t2.max_date
+                WHERE (t1.repo_name ILIKE '%INTERNO%' OR t1.repo_name ILIKE '%PUBLICO%')
+                AND CAST(t1.date AS TIMESTAMP) >= TIMESTAMP '2025-05-05 00:00:00'
+                AND CAST(t1.date AS TIMESTAMP) <= TIMESTAMP '2025-05-17 03:00:00'
+                AND t1.author NOT IN ('Inteli Hub', 'José Romualdo')
+            ),
+            todos_os_repositorios AS (
+                SELECT DISTINCT repo_name
                 FROM commits
-                WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{start_datetime}'
-                AND CAST(date AS TIMESTAMP) <= TIMESTAMP '{end_datetime}'
-                AND author NOT IN ('Inteli Hub', 'José Romualdo')
-                GROUP BY repo_name
-            ) t2 ON t1.repo_name = t2.repo_name AND CAST(t1.date AS TIMESTAMP) = t2.max_date
-            WHERE (t1.repo_name ILIKE '%INTERNO%' OR t1.repo_name ILIKE '%PUBLICO%')
-            AND CAST(t1.date AS TIMESTAMP) >= TIMESTAMP '{start_datetime}' 
-            AND CAST(t1.date AS TIMESTAMP) <= TIMESTAMP '{end_datetime}'
-            AND t1.author NOT IN ('Inteli Hub', 'José Romualdo')
-            ORDER BY t1.repo_name
+                WHERE repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%'
+            )
+            SELECT 
+                r.repo_name,
+                c.author,
+                c.commit_date,
+                c.message
+            FROM todos_os_repositorios r
+            LEFT JOIN commits_no_prazo c ON r.repo_name = c.repo_name
+            ORDER BY r.repo_name;
             """
             df1 = conn.execute(query1).fetchdf()
 
