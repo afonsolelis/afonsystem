@@ -2,29 +2,23 @@ import streamlit as st
 import pandas as pd
 import duckdb
 import datetime
-import matplotlib.pyplot as plt
 import os
+import matplotlib.pyplot as plt
 
-# Configuração da página
-st.set_page_config(page_title="Análise de Commits", page_icon="📊", layout="wide")
-st.title("Análise de Commits por Sprint")
+st.set_page_config(page_title="Análise de Commits por Repositório", page_icon="📊", layout="wide")
+st.title("Análise de Commits - Repositórios sem commits na janela, com commits após a janela e detalhamento por projeto")
 
-# Caminho para o banco DuckDB
 duckdb_path = os.path.join("duckdb_exports", "default.duckdb")
 
-# Função para conectar ao DuckDB
 @st.cache_resource
 def connect_to_duckdb():
     return duckdb.connect(duckdb_path)
 
-# Conectar
 conn = connect_to_duckdb()
 
-# Interface do usuário para filtros de data
 st.sidebar.header("Filtros de Data")
-
-default_end_date = datetime.date(2025, 3, 15)
-default_start_date = datetime.date(2025, 3, 5)
+default_end_date = datetime.date(2025, 5, 17)
+default_start_date = datetime.date(2025, 5, 5)
 
 start_date = st.sidebar.date_input("Data Inicial da Sprint", value=default_start_date)
 end_date = st.sidebar.date_input("Data Final da Sprint", value=default_end_date)
@@ -33,220 +27,163 @@ end_time = st.sidebar.time_input("Hora limite (final da sprint)", value=datetime
 start_datetime = f"{start_date} 00:00:00"
 end_datetime = f"{end_date} {end_time}"
 
-if st.sidebar.button("Executar Análise"):
-    try:
-        st.info("As datas estão em GMT, considere sempre colocar 3 horas na frente a data final para São Paulo, Brasil.")
-        st.info(f"Analisando commits de {start_datetime} até {end_datetime}")
+# Filtro: Tipo de repositório
+filtro_tipo = st.sidebar.selectbox(
+    "Tipo de Repositório",
+    ("Todos", "INTERNO", "PUBLICO")
+)
 
-        tab1, tab2, tab3 = st.tabs([
-            "Commits Dentro do Prazo", 
-            "Alunos Sem Commits na Sprint", 
-            "Commits Após o Prazo"
-        ])
+st.info("As datas estão em GMT, considere sempre colocar 3 horas na frente a data final para São Paulo, Brasil.")
+st.info(f"Analisando commits de {start_datetime} até {end_datetime}")
 
-        # TAB 1
-        with tab1:
-            st.header("Autores com Commits Dentro do Prazo")
+tab1, tab2, tab3 = st.tabs([
+    "Repositórios SEM commits na janela",
+    "Repositórios SEM commits na janela MAS COM commits após",
+    "Detalhar commits por projeto"
+])
 
-            query1 = f"""
-            WITH commits_no_prazo AS (
-                SELECT 
-                    t1.repo_name,
-                    t1.author,
-                    CAST(t1.date AS TIMESTAMP) AS commit_date,
-                    t1.message
-                FROM commits t1
-                JOIN (
-                    SELECT 
-                        repo_name, 
-                        MAX(CAST(date AS TIMESTAMP)) AS max_date
-                    FROM commits
-                    WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                    AND CAST(date AS TIMESTAMP) >= TIMESTAMP '2025-05-05 00:00:00'
-                    AND CAST(date AS TIMESTAMP) <= TIMESTAMP '2025-05-17 03:00:00'
-                    AND author NOT IN ('Inteli Hub', 'José Romualdo')
-                    GROUP BY repo_name
-                ) t2 
-                ON t1.repo_name = t2.repo_name 
-            AND CAST(t1.date AS TIMESTAMP) = t2.max_date
-                WHERE (t1.repo_name ILIKE '%INTERNO%' OR t1.repo_name ILIKE '%PUBLICO%')
-                AND CAST(t1.date AS TIMESTAMP) >= TIMESTAMP '2025-05-05 00:00:00'
-                AND CAST(t1.date AS TIMESTAMP) <= TIMESTAMP '2025-05-17 03:00:00'
-                AND t1.author NOT IN ('Inteli Hub', 'José Romualdo')
-            ),
-            todos_os_repositorios AS (
-                SELECT DISTINCT repo_name
-                FROM commits
-                WHERE repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%'
-            )
-            SELECT 
-                r.repo_name,
-                c.author,
-                c.commit_date,
-                c.message
-            FROM todos_os_repositorios r
-            LEFT JOIN commits_no_prazo c ON r.repo_name = c.repo_name
-            ORDER BY r.repo_name;
-            """
-            df1 = conn.execute(query1).fetchdf()
+# 1. Pegar todos os repositórios válidos (contendo -INTERNO ou -PUBLICO, conforme filtro)
+if filtro_tipo == "INTERNO":
+    where_clause = "repo_name ILIKE '%-INTERNO%'"
+elif filtro_tipo == "PUBLICO":
+    where_clause = "repo_name ILIKE '%-PUBLICO%'"
+else:
+    where_clause = "repo_name ILIKE '%-INTERNO%' OR repo_name ILIKE '%-PUBLICO%'"
 
-            if not df1.empty:
-                df1['commit_date'] = pd.to_datetime(df1['commit_date']).dt.tz_localize('UTC').dt.tz_convert('America/Sao_Paulo')
-                df1['commit_date'] = df1['commit_date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-                st.dataframe(df1, use_container_width=True)
-                st.success(f"Total de {len(df1)} commits dentro do prazo")
+query_repos = f"""
+SELECT DISTINCT repo_name
+FROM commits
+WHERE {where_clause}
+ORDER BY repo_name;
+"""
+df_repos = conn.execute(query_repos).fetchdf()
+repositorios = df_repos['repo_name'].tolist()
 
-                query_repos = f"""
-                SELECT repo_name, COUNT(*) as num_commits
-                FROM commits
-                WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{start_datetime}' 
-                AND CAST(date AS TIMESTAMP) <= TIMESTAMP '{end_datetime}'
-                AND author NOT IN ('Inteli Hub', 'José Romualdo')
-                GROUP BY repo_name
-                ORDER BY num_commits DESC
-                LIMIT 10
-                """
-                df_repos = conn.execute(query_repos).fetchdf()
+registros_sem_janela = []
+registros_sem_janela_com_apos = []
 
-                query_authors = f"""
-                SELECT author, COUNT(*) as num_commits
-                FROM commits
-                WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{start_datetime}' 
-                AND CAST(date AS TIMESTAMP) <= TIMESTAMP '{end_datetime}'
-                AND author NOT IN ('Inteli Hub', 'José Romualdo')
-                GROUP BY author
-                ORDER BY num_commits DESC
-                LIMIT 10
-                """
-                df_authors = conn.execute(query_authors).fetchdf()
+for repo in repositorios:
+    # Verifica se houve commit na janela
+    query_janela = f"""
+    SELECT COUNT(*)
+    FROM commits
+    WHERE repo_name = '{repo}'
+    AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{start_datetime}'
+    AND CAST(date AS TIMESTAMP) <= TIMESTAMP '{end_datetime}';
+    """
+    commits_na_janela = conn.execute(query_janela).fetchone()[0]
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.subheader("Top 10 Repositórios com Mais Commits")
-                    st.dataframe(df_repos)
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    ax.barh(df_repos['repo_name'], df_repos['num_commits'])
-                    ax.set_xlabel('Número de Commits')
-                    ax.set_ylabel('Repositório')
-                    ax.set_title('Top 10 Repositórios')
-                    st.pyplot(fig)
+    # Se NÃO houve commit na janela
+    if commits_na_janela == 0:
+        # Pega os authors relacionados a esse repo, excluindo os indesejados
+        query_authors = f"""
+        SELECT DISTINCT author
+        FROM commits
+        WHERE repo_name = '{repo}'
+        AND author NOT IN ('Inteli Hub', 'José Romualdo');
+        """
+        df_authors = conn.execute(query_authors).fetchdf()
+        authors_list = df_authors['author'].tolist()
+        authors_str = ", ".join(authors_list) if authors_list else "Nenhum author registrado"
 
-                with col2:
-                    st.subheader("Top 10 Autores Mais Ativos")
-                    st.dataframe(df_authors)
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    ax.barh(df_authors['author'], df_authors['num_commits'])
-                    ax.set_xlabel('Número de Commits')
-                    ax.set_ylabel('Autor')
-                    ax.set_title('Top 10 Autores')
-                    st.pyplot(fig)
-            else:
-                st.warning("Nenhum resultado encontrado para commits dentro do prazo.")
+        registros_sem_janela.append({
+            'Repositório': repo,
+            'Commits na Janela?': 'Não',
+            'Authors': authors_str
+        })
 
-        # TAB 2
-        with tab2:
-            st.header("Alunos Sem Commits na Sprint")
-            query2 = f"""
+        # Verifica se houve commit APÓS a janela
+        query_apos = f"""
+        SELECT COUNT(*)
+        FROM commits
+        WHERE repo_name = '{repo}'
+        AND CAST(date AS TIMESTAMP) > TIMESTAMP '{end_datetime}';
+        """
+        commits_apos = conn.execute(query_apos).fetchone()[0]
+
+        if commits_apos > 0:
+            # Pega os authors dos commits após a janela, excluindo os indesejados
+            query_authors_apos = f"""
             SELECT DISTINCT author
             FROM commits
-            WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-            AND author NOT IN ('Inteli Hub', 'José Romualdo')
-            AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{end_datetime}'
-            AND author NOT IN (
-                SELECT DISTINCT author
-                FROM commits
-                WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{start_datetime}' 
-                AND CAST(date AS TIMESTAMP) < TIMESTAMP '{end_datetime}'
-            )
-            ORDER BY author
+            WHERE repo_name = '{repo}'
+            AND CAST(date AS TIMESTAMP) > TIMESTAMP '{end_datetime}'
+            AND author NOT IN ('Inteli Hub', 'José Romualdo');
             """
-            df2 = conn.execute(query2).fetchdf()
+            df_authors_apos = conn.execute(query_authors_apos).fetchdf()
+            authors_list_apos = df_authors_apos['author'].tolist()
+            authors_str_apos = ", ".join(authors_list_apos) if authors_list_apos else "Nenhum author registrado"
 
-            if not df2.empty:
-                st.dataframe(df2, use_container_width=True)
-                st.error(f"Total de {len(df2)} alunos sem commits na sprint")
-            else:
-                st.success("Todos os alunos fizeram commits durante a sprint!")
+            registros_sem_janela_com_apos.append({
+                'Repositório': repo,
+                'Commits após a Janela': commits_apos,
+                'Authors': authors_str_apos
+            })
 
-        # TAB 3
-        with tab3:
-            st.header("Commits Após o Prazo")
+# TAB 1 - SEM commits na janela
+with tab1:
+    st.header("Repositórios SEM commits na janela selecionada")
+    df_sem_janela = pd.DataFrame(registros_sem_janela)
+    if not df_sem_janela.empty:
+        st.dataframe(df_sem_janela, use_container_width=True)
+        st.error(f"{len(df_sem_janela)} repositórios NÃO fizeram commits na janela.")
+    else:
+        st.success("Todos os repositórios realizaram commits na janela selecionada!")
 
-            query3_commits = f"""
+# TAB 2 - SEM commits na janela MAS COM commits após
+with tab2:
+    st.header("Repositórios SEM commits na janela MAS COM commits após a janela")
+    df_sem_janela_com_apos = pd.DataFrame(registros_sem_janela_com_apos)
+    if not df_sem_janela_com_apos.empty:
+        st.dataframe(df_sem_janela_com_apos, use_container_width=True)
+        st.warning(f"{len(df_sem_janela_com_apos)} repositórios NÃO fizeram commits na janela mas fizeram APÓS.")
+    else:
+        st.success("Nenhum repositório fez commit após a janela sem ter feito na janela!")
+
+# TAB 3 - Detalhamento por projeto
+with tab3:
+    st.header("Detalhamento de commits por repositório")
+
+    if repositorios:
+        selected_repo = st.selectbox("Selecione o repositório para detalhar", repositorios, key="repo_select")
+
+        # Consulta detalhada dos commits
+        query_detalhe = f"""
+        SELECT author, date, message
+        FROM commits
+        WHERE repo_name = '{selected_repo}'
+        ORDER BY CAST(date AS TIMESTAMP);
+        """
+        df_detalhe = conn.execute(query_detalhe).fetchdf()
+
+        if not df_detalhe.empty:
+            st.dataframe(df_detalhe, use_container_width=True)
+            st.success(f"Total de {len(df_detalhe)} commits encontrados para {selected_repo} na janela selecionada.")
+
+            # Consulta agregada: commits por dia
+            query_agrupada = f"""
             SELECT 
-                author,
-                repo_name,
-                CAST(date AS TIMESTAMP) AS commit_date,
-                message
+                DATE_TRUNC('day', CAST(date AS TIMESTAMP)) AS dia,
+                COUNT(*) AS total_commits
             FROM commits
-            WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-            AND author NOT IN ('Inteli Hub', 'José Romualdo')
-            AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{end_datetime}'
-            AND author IN (
-                SELECT DISTINCT author
-                FROM commits
-                WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{end_datetime}'
-                AND author NOT IN (
-                    SELECT DISTINCT author
-                    FROM commits
-                    WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                    AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{start_datetime}' 
-                    AND CAST(date AS TIMESTAMP) < TIMESTAMP '{end_datetime}'
-                )
-            )
-            ORDER BY commit_date DESC
+            WHERE repo_name = '{selected_repo}'
+            GROUP BY dia
+            ORDER BY dia;
             """
-            df_commits = conn.execute(query3_commits).fetchdf()
+            df_agrupada = conn.execute(query_agrupada).fetchdf()
 
-            if not df_commits.empty:
-                df_commits['commit_date'] = pd.to_datetime(df_commits['commit_date']).dt.tz_localize('UTC').dt.tz_convert('America/Sao_Paulo')
-                df_commits['commit_date'] = df_commits['commit_date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-                st.subheader("Commits Após o Prazo")
-                st.dataframe(df_commits, use_container_width=True)
-
-                query3_summary = f"""
-                WITH repos AS (
-                    SELECT DISTINCT repo_name
-                    FROM commits
-                    WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                    AND author NOT IN ('Inteli Hub', 'José Romualdo')
-                    AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{end_datetime}'
-                    AND author IN (
-                        SELECT DISTINCT author
-                        FROM commits
-                        WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                        AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{end_datetime}'
-                        AND author NOT IN (
-                            SELECT DISTINCT author
-                            FROM commits
-                            WHERE (repo_name ILIKE '%INTERNO%' OR repo_name ILIKE '%PUBLICO%')
-                            AND CAST(date AS TIMESTAMP) >= TIMESTAMP '{start_datetime}' 
-                            AND CAST(date AS TIMESTAMP) < TIMESTAMP '{end_datetime}'
-                        )
-                    )
-                )
-                SELECT DISTINCT c.repo_name, c.author
-                FROM commits c
-                JOIN repos r ON c.repo_name = r.repo_name
-                WHERE c.author NOT IN ('Inteli Hub', 'José Romualdo')
-                ORDER BY c.repo_name, c.author
-                """
-                df3 = conn.execute(query3_summary).fetchdf()
-
-                if not df3.empty:
-                    st.subheader("Colaboradores por Repositório com Entrega Atrasada")
-                    st.dataframe(df3, use_container_width=True)
-                else:
-                    st.info("Nenhum colaborador identificado com commits apenas após o prazo.")
+            if not df_agrupada.empty:
+                st.subheader("Gráfico: Commits por dia")
+                fig, ax = plt.subplots(figsize=(10, 5))
+                ax.bar(df_agrupada['dia'].astype(str), df_agrupada['total_commits'])
+                ax.set_xlabel("Data")
+                ax.set_ylabel("Número de Commits")
+                ax.set_title(f"Commits por dia - {selected_repo}")
+                plt.xticks(rotation=45)
+                st.pyplot(fig)
             else:
-                st.success("Nenhum commit foi feito após o prazo.")
-
-    except Exception as e:
-        st.error(f"Erro ao executar a análise: {str(e)}")
-
-else:
-    st.info("Selecione o período da sprint no menu lateral e clique em 'Executar Análise' para visualizar os resultados.")
+                st.warning("Nenhum commit encontrado para gerar gráfico.")
+        else:
+            st.warning(f"Nenhum commit encontrado para {selected_repo} na janela selecionada.")
+    else:
+        st.info("Nenhum repositório encontrado para o filtro atual.")
