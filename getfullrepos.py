@@ -23,7 +23,7 @@ def fetch_repositories(client: Github) -> list[str]:
     return [
         repo.full_name
         for repo in user.get_repos()
-        if '2025-1B-T' in repo.full_name
+        if '2025-1B-T15' in repo.full_name
            and 'PUBLICO' not in repo.full_name
            and 'INTERNO' not in repo.full_name
     ]
