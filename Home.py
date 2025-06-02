@@ -113,11 +113,24 @@ total_commits = query_dataframe(f"""
       AND CAST(date AS DATE) BETWEEN '{start_date}' AND '{end_date}'
 """).iloc[0]['total']
 
+feat_commits = count_commits_by_type('feat')
+fix_commits = count_commits_by_type('fix')
+docs_commits = count_commits_by_type('docs')
+chore_commits = count_commits_by_type('chore')
+refactor_commits = count_commits_by_type('refactor')
+test_commits = count_commits_by_type('test')
+merge_commits = count_commits_by_type('merge')
+
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total de Commits", total_commits)
-col2.metric("Commits 'feat'", count_commits_by_type('feat'))
-col3.metric("Commits 'fix'", count_commits_by_type('fix'))
-col4.metric("Commits 'docs'", count_commits_by_type('docs'))
+col2.metric("'feat'", feat_commits)
+col3.metric("'fix'", fix_commits)
+col4.metric("'docs'", docs_commits)
+
+col5, col6, col7 = st.columns(3)
+col5.metric("'chore'", chore_commits)
+col6.metric("'refactor'", refactor_commits)
+col7.metric("'test'", test_commits)
 
 # Tabela de Commits
 st.header(f"Commits no Repositório: {selected_repo}")
@@ -162,6 +175,7 @@ commits_by_type = query_dataframe(f"""
             WHEN LOWER(message) LIKE 'chore%' THEN 'chore'
             WHEN LOWER(message) LIKE 'refactor%' THEN 'refactor'
             WHEN LOWER(message) LIKE 'merge%' THEN 'merge'
+            WHEN LOWER(message) LIKE 'test%' THEN 'test'
             ELSE 'other'
         END AS commit_type,
         COUNT(*) AS quantidade
@@ -186,6 +200,7 @@ commits_by_type_author = query_dataframe(f"""
             WHEN LOWER(message) LIKE 'chore%' THEN 'chore'
             WHEN LOWER(message) LIKE 'refactor%' THEN 'refactor'
             WHEN LOWER(message) LIKE 'merge%' THEN 'merge'
+            WHEN LOWER(message) LIKE 'test%' THEN 'test'
             ELSE 'other'
         END AS commit_type,
         COUNT(*) AS quantidade
