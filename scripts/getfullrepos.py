@@ -8,25 +8,22 @@ from github import Github, GithubException
 from dotenv import load_dotenv
 import os
 
-# Carrega variáveis do arquivo .env na raiz do projeto
+# Carrega variáveis do arquivo .env
 load_dotenv(dotenv_path='.env')
 
-# Lê o token do GitHub a partir da variável de ambiente
+# Variáveis de ambiente
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
+REPOS_JSON = os.getenv('GITREPOS')
 DB_FILE = 'duckdb_exports/default.duckdb'
 
 def get_github_client(token: str) -> Github:
     return Github(token)
 
-def fetch_repositories(client: Github) -> list[str]:
-    user = client.get_user()
-    return [
-        repo.full_name
-        for repo in user.get_repos()
-        if '2025-1B-T14' in repo.full_name
-           and 'PUBLICO' not in repo.full_name
-           and 'INTERNO' not in repo.full_name
-    ]
+def fetch_repositories_from_env() -> list[str]:
+    try:
+        return json.loads(REPOS_JSON)
+    except Exception as e:
+        raise ValueError("Erro ao decodificar GITREPOS no .env. Verifique se está no formato JSON correto.") from e
 
 def get_all_commits(repo_name: str, client: Github) -> list[dict]:
     data = []
@@ -63,41 +60,6 @@ def get_all_pull_requests(repo_name: str, client: Github) -> list[dict]:
         })
     return data
 
-def ensure_tables(conn):
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS repositories (
-            repo_name TEXT PRIMARY KEY
-        );
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS commits (
-            sha TEXT,
-            message TEXT,
-            author TEXT,
-            email TEXT,
-            date TEXT,
-            url TEXT,
-            repo_name TEXT,
-            PRIMARY KEY (sha, repo_name)
-        );
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS pull_requests (
-            number TEXT,
-            title TEXT,
-            author TEXT,
-            email TEXT,
-            created_at TEXT,
-            state TEXT,
-            comments TEXT,
-            review_comments TEXT,
-            commits TEXT,
-            url TEXT,
-            repo_name TEXT,
-            PRIMARY KEY (number, repo_name)
-        );
-    """)
-
 def get_existing_set(conn, table: str, column: str, repo_name: str = None) -> set:
     if repo_name:
         rows = conn.execute(
@@ -133,11 +95,10 @@ def insert_new_records(conn, df: pd.DataFrame, table: str, key_col: str, repo_na
 def main():
     os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
     client = get_github_client(GITHUB_TOKEN)
-    repos = fetch_repositories(client)
-    print(f"🔍 {len(repos)} repositórios filtrados.")
+    repos = fetch_repositories_from_env()
+    print(f"🔍 {len(repos)} repositórios carregados do .env.")
 
     conn = duckdb.connect(database=DB_FILE)
-    ensure_tables(conn)
     insert_new_repositories(conn, repos)
 
     start = time.time()
