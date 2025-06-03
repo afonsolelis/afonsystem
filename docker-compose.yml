@@ -5,6 +5,6 @@ services:
     build: .
     container_name: streamlit-afonsystem
     ports:
-      - "9990:8501"
+      - "9991:8501"
     volumes:
       - ./duckdb_exports:/app/duckdb_exports
