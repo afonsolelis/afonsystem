@@ -33,6 +33,21 @@ def connect_clickhouse():
         password='afonsystem'
     )
 
+# 🔍 Função para obter SHAs de commits já existentes
+def fetch_existing_commit_shas(client, repo_name: str) -> set:
+    result = client.query(
+        f"SELECT sha FROM commits WHERE repo_name = '{repo_name}'"
+    )
+    return set(row[0] for row in result.result_rows)
+
+# 🔍 Função para obter números de PRs já existentes
+def fetch_existing_pr_numbers(client, repo_name: str) -> set:
+    result = client.query(
+        f"SELECT number FROM pull_requests WHERE repo_name = '{repo_name}'"
+    )
+    return set(row[0] for row in result.result_rows)
+
+
 # Commits do GitHub
 def get_all_commits(repo_name: str, client: Github) -> pd.DataFrame:
     data = []
@@ -49,6 +64,7 @@ def get_all_commits(repo_name: str, client: Github) -> pd.DataFrame:
             'repo_name': repo_name
         })
     return pd.DataFrame(data)
+
 
 # Pull requests do GitHub
 def get_all_pull_requests(repo_name: str, client: Github) -> pd.DataFrame:
@@ -70,23 +86,31 @@ def get_all_pull_requests(repo_name: str, client: Github) -> pd.DataFrame:
         })
     return pd.DataFrame(data)
 
-# Inserção direta no ClickHouse
+
+# Inserção no ClickHouse com verificação de duplicados
 def insert_clickhouse(client, df: pd.DataFrame, table: str):
     if df.empty:
         return 0
 
     if table == 'commits':
         df['date'] = pd.to_datetime(df['date'], errors='coerce')
-        client.insert(table, df[['sha', 'message', 'author', 'email', 'date', 'url', 'repo_name']].values.tolist(),
-                      column_names=['sha', 'message', 'author', 'email', 'date', 'url', 'repo_name'])
+        client.insert(
+            table,
+            df[['sha', 'message', 'author', 'email', 'date', 'url', 'repo_name']].values.tolist(),
+            column_names=['sha', 'message', 'author', 'email', 'date', 'url', 'repo_name']
+        )
 
     elif table == 'pull_requests':
         df['created_at'] = pd.to_datetime(df['created_at'], errors='coerce')
-        client.insert(table, df[['number', 'title', 'author', 'email', 'created_at', 'state',
-                                 'comments', 'review_comments', 'commits', 'url', 'repo_name']].values.tolist(),
-                      column_names=['number', 'title', 'author', 'email', 'created_at', 'state',
-                                    'comments', 'review_comments', 'commits', 'url', 'repo_name'])
+        client.insert(
+            table,
+            df[['number', 'title', 'author', 'email', 'created_at', 'state',
+                 'comments', 'review_comments', 'commits', 'url', 'repo_name']].values.tolist(),
+            column_names=['number', 'title', 'author', 'email', 'created_at', 'state',
+                          'comments', 'review_comments', 'commits', 'url', 'repo_name']
+        )
     return len(df)
+
 
 # Main
 def main():
@@ -98,25 +122,38 @@ def main():
     start = time.time()
 
     for repo in repos:
-        print(f"📦 Processando {repo}…")
+        print(f"\n📦 Processando {repo}…")
 
-        # Commits
+        # 🔍 Commits
         try:
+            existing_commits = fetch_existing_commit_shas(click_client, repo)
             commits = get_all_commits(repo, client)
-            count_new = insert_clickhouse(click_client, commits, 'commits')
-            print(f"    • {count_new} commits enviados ao ClickHouse.")
+            commits = commits[~commits['sha'].isin(existing_commits)]
+
+            if not commits.empty:
+                count_new = insert_clickhouse(click_client, commits, 'commits')
+                print(f"    • {count_new} novos commits enviados ao ClickHouse.")
+            else:
+                print("    • Nenhum commit novo encontrado.")
         except GithubException as e:
             print(f"    ⚠️ Erro ao coletar commits: {e}")
 
-        # Pull Requests
+        # 🔍 Pull Requests
         try:
+            existing_prs = fetch_existing_pr_numbers(click_client, repo)
             prs = get_all_pull_requests(repo, client)
-            count_pr = insert_clickhouse(click_client, prs, 'pull_requests')
-            print(f"    • {count_pr} pull requests enviados ao ClickHouse.")
+            prs = prs[~prs['number'].isin(existing_prs)]
+
+            if not prs.empty:
+                count_pr = insert_clickhouse(click_client, prs, 'pull_requests')
+                print(f"    • {count_pr} novos pull requests enviados ao ClickHouse.")
+            else:
+                print("    • Nenhum pull request novo encontrado.")
         except GithubException as e:
             print(f"    ⚠️ Erro ao coletar pull requests: {e}")
 
-    print(f"✅ Coleta concluída em {time.time() - start:.2f}s")
+    print(f"\n✅ Coleta concluída em {time.time() - start:.2f}s")
+
 
 if __name__ == '__main__':
     main()

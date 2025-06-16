@@ -10,7 +10,7 @@ st.set_page_config(layout="wide")
 # Conectar ao ClickHouse
 try:
     client = clickhouse_connect.get_client(
-        host='localhost',
+        host='10.140.0.16',
         port=8123,
         username='default',
         password='afonsystem'
