@@ -1,10 +1,7 @@
 streamlit
 pandas
-sqlalchemy
-psycopg2-binary
 python-dotenv
 plotly
-clickhouse-connect
 pygithub
 duckdb
-matplotlib
+pydantic
