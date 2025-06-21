@@ -8,3 +8,6 @@ services:
       - "9991:8501"
     volumes:
       - ./duckdb_exports:/app/duckdb_exports
+      - ./.env:/app/.env
+    environment:
+      - PYTHONPATH=/app
