@@ -5,6 +5,3 @@ plotly
 pygithub
 pydantic
 supabase
-pyarrow
-fastparquet
-duckdb

@@ -26,10 +26,8 @@ class PullRequestRepository:
         if df.empty:
             return []
         
-        # Convert created_at column to datetime if it's not already
         df['created_at'] = pd.to_datetime(df['created_at'])
         
-        # Filter by date range
         mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
         filtered_df = df[mask].sort_values('created_at', ascending=False)
         
@@ -72,13 +70,11 @@ class PullRequestRepository:
         if df.empty:
             return 0
         
-        # Filter by date range if provided
         if start_date and end_date:
             df['created_at'] = pd.to_datetime(df['created_at'])
             mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
             df = df[mask]
         
-        # Filter by state
         state_mask = df['state'] == state
         return len(df[state_mask])
     
@@ -88,13 +84,11 @@ class PullRequestRepository:
         if df.empty:
             return []
         
-        # Filter by date range if provided
         if start_date and end_date:
             df['created_at'] = pd.to_datetime(df['created_at'])
             mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
             df = df[mask]
         
-        # Group by author and count
         author_counts = df.groupby('author').size().reset_index(name='count')
         author_counts = author_counts.sort_values('count', ascending=False)
         
@@ -106,13 +100,11 @@ class PullRequestRepository:
         if df.empty:
             return []
         
-        # Filter by date range if provided
         if start_date and end_date:
             df['created_at'] = pd.to_datetime(df['created_at'])
             mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
             df = df[mask]
         
-        # Group by state and count
         state_counts = df.groupby('state').size().reset_index(name='count')
         state_counts = state_counts.sort_values('count', ascending=False)
         
@@ -126,17 +118,14 @@ class PullRequestRepository:
         
         df['created_at'] = pd.to_datetime(df['created_at'])
         
-        # Filter by date range if provided
         if start_date and end_date:
             mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
             df = df[mask]
         
-        # Group by date
         df['day'] = df['created_at'].dt.date
         daily_counts = df.groupby('day').size().reset_index(name='count')
         daily_counts = daily_counts.sort_values('day')
         
-        # Convert day back to string for JSON serialization
         daily_counts['day'] = daily_counts['day'].astype(str)
         
         return daily_counts.to_dict('records')

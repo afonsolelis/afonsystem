@@ -1,14 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir:*)",
-      "Bash(rm:*)",
-      "Bash(mv:*)",
-      "Bash(find:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker compose:*)",
       "Bash(rg:*)",
-      "Bash(python:*)",
       "Bash(grep:*)",
-      "Bash(touch:*)"
+      "Bash(python:*)"
     ],
     "deny": []
   }

@@ -36,7 +36,6 @@ class DatabaseHelper:
                 return pd.read_parquet(self.commits_file)
             return None
         except Exception as e:
-            print(f"Error reading commits: {e}")
             return None
     
     def read_prs(self) -> Optional[pd.DataFrame]:
@@ -46,7 +45,6 @@ class DatabaseHelper:
                 return pd.read_parquet(self.prs_file)
             return None
         except Exception as e:
-            print(f"Error reading pull requests: {e}")
             return None
     
     def save_commits(self, df: pd.DataFrame):
@@ -55,7 +53,7 @@ class DatabaseHelper:
             os.makedirs(self.repo_path, exist_ok=True)
             df.to_parquet(self.commits_file, index=False)
         except Exception as e:
-            print(f"Error saving commits: {e}")
+            pass
     
     def save_prs(self, df: pd.DataFrame):
         """Save pull requests dataframe to parquet file"""
@@ -63,7 +61,7 @@ class DatabaseHelper:
             os.makedirs(self.repo_path, exist_ok=True)
             df.to_parquet(self.prs_file, index=False)
         except Exception as e:
-            print(f"Error saving pull requests: {e}")
+            pass
     
     def close(self):
         """No connection to close for parquet files"""
