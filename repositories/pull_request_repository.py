@@ -1,173 +1,163 @@
-import duckdb
+import pandas as pd
+import os
 from typing import List, Optional
 from datetime import date
-from models.pull_request import PullRequest
 
 
 class PullRequestRepository:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-        self.conn = duckdb.connect(db_path)
+    def __init__(self, dataset_path: str):
+        self.dataset_path = dataset_path
+        self.prs_file = os.path.join(dataset_path, 'pull_requests.parquet')
     
-    def create_table(self):
-        """Create pull_requests table if it doesn't exist"""
-        self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS pull_requests (
-                number INTEGER PRIMARY KEY,
-                title TEXT NOT NULL,
-                author VARCHAR NOT NULL,
-                state VARCHAR NOT NULL,
-                created_at TIMESTAMP NOT NULL,
-                url VARCHAR NOT NULL
-            )
-        """)
+    def _read_prs(self) -> pd.DataFrame:
+        """Read pull requests from parquet file"""
+        if os.path.exists(self.prs_file):
+            return pd.read_parquet(self.prs_file)
+        return pd.DataFrame(columns=['number', 'title', 'author', 'state', 'created_at', 'url'])
     
-    def insert_pull_request(self, pr: PullRequest) -> bool:
-        """Insert a single pull request"""
-        try:
-            self.conn.execute("""
-                INSERT OR REPLACE INTO pull_requests (number, title, author, state, created_at, url)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, [pr.number, pr.title, pr.author, pr.state, pr.created_at, pr.url])
-            return True
-        except Exception as e:
-            print(f"Error inserting pull request: {e}")
-            return False
-    
-    def insert_pull_requests(self, prs: List[PullRequest]) -> bool:
-        """Insert multiple pull requests"""
-        try:
-            data = [(pr.number, pr.title, pr.author, pr.state, pr.created_at, pr.url) for pr in prs]
-            self.conn.executemany("""
-                INSERT OR REPLACE INTO pull_requests (number, title, author, state, created_at, url)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, data)
-            return True
-        except Exception as e:
-            print(f"Error inserting pull requests: {e}")
-            return False
+    def _save_prs(self, df: pd.DataFrame):
+        """Save pull requests to parquet file"""
+        os.makedirs(self.dataset_path, exist_ok=True)
+        df.to_parquet(self.prs_file, index=False)
     
     def get_pull_requests_by_date_range(self, start_date: date, end_date: date) -> List[dict]:
         """Get pull requests within date range"""
-        result = self.conn.execute("""
-            SELECT number, title, author, state, created_at, url
-            FROM pull_requests
-            WHERE created_at BETWEEN ? AND ?
-            ORDER BY created_at DESC
-        """, [start_date, end_date])
-        return result.fetchall()
+        df = self._read_prs()
+        if df.empty:
+            return []
+        
+        # Convert created_at column to datetime if it's not already
+        df['created_at'] = pd.to_datetime(df['created_at'])
+        
+        # Filter by date range
+        mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
+        filtered_df = df[mask].sort_values('created_at', ascending=False)
+        
+        return filtered_df.to_dict('records')
     
     def get_pull_requests_by_author(self, author: str) -> List[dict]:
         """Get pull requests by author"""
-        result = self.conn.execute("""
-            SELECT number, title, author, state, created_at, url
-            FROM pull_requests
-            WHERE author = ?
-            ORDER BY created_at DESC
-        """, [author])
-        return result.fetchall()
+        df = self._read_prs()
+        if df.empty:
+            return []
+        
+        filtered_df = df[df['author'] == author].sort_values('created_at', ascending=False)
+        return filtered_df.to_dict('records')
     
     def get_pull_requests_by_state(self, state: str) -> List[dict]:
         """Get pull requests by state"""
-        result = self.conn.execute("""
-            SELECT number, title, author, state, created_at, url
-            FROM pull_requests
-            WHERE state = ?
-            ORDER BY created_at DESC
-        """, [state])
-        return result.fetchall()
+        df = self._read_prs()
+        if df.empty:
+            return []
+        
+        filtered_df = df[df['state'] == state].sort_values('created_at', ascending=False)
+        return filtered_df.to_dict('records')
     
     def count_total_pull_requests(self, start_date: Optional[date] = None, end_date: Optional[date] = None) -> int:
         """Count total pull requests, optionally within date range"""
+        df = self._read_prs()
+        if df.empty:
+            return 0
+        
         if start_date and end_date:
-            result = self.conn.execute("""
-                SELECT COUNT(*) FROM pull_requests 
-                WHERE created_at BETWEEN ? AND ?
-            """, [start_date, end_date])
-        else:
-            result = self.conn.execute("SELECT COUNT(*) FROM pull_requests")
-        return result.fetchone()[0]
+            df['created_at'] = pd.to_datetime(df['created_at'])
+            mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
+            return len(df[mask])
+        
+        return len(df)
     
     def count_pull_requests_by_state(self, state: str, start_date: Optional[date] = None, end_date: Optional[date] = None) -> int:
         """Count pull requests by state"""
+        df = self._read_prs()
+        if df.empty:
+            return 0
+        
+        # Filter by date range if provided
         if start_date and end_date:
-            result = self.conn.execute("""
-                SELECT COUNT(*) FROM pull_requests
-                WHERE state = ? AND created_at BETWEEN ? AND ?
-            """, [state, start_date, end_date])
-        else:
-            result = self.conn.execute("""
-                SELECT COUNT(*) FROM pull_requests
-                WHERE state = ?
-            """, [state])
-        return result.fetchone()[0]
+            df['created_at'] = pd.to_datetime(df['created_at'])
+            mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
+            df = df[mask]
+        
+        # Filter by state
+        state_mask = df['state'] == state
+        return len(df[state_mask])
     
     def get_pull_requests_by_author_count(self, start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[dict]:
         """Get pull request counts grouped by author"""
+        df = self._read_prs()
+        if df.empty:
+            return []
+        
+        # Filter by date range if provided
         if start_date and end_date:
-            result = self.conn.execute("""
-                SELECT author, COUNT(*) as count
-                FROM pull_requests
-                WHERE created_at BETWEEN ? AND ?
-                GROUP BY author
-                ORDER BY count DESC
-            """, [start_date, end_date])
-        else:
-            result = self.conn.execute("""
-                SELECT author, COUNT(*) as count
-                FROM pull_requests
-                GROUP BY author
-                ORDER BY count DESC
-            """)
-        return result.fetchall()
+            df['created_at'] = pd.to_datetime(df['created_at'])
+            mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
+            df = df[mask]
+        
+        # Group by author and count
+        author_counts = df.groupby('author').size().reset_index(name='count')
+        author_counts = author_counts.sort_values('count', ascending=False)
+        
+        return author_counts.to_dict('records')
     
     def get_pull_requests_by_state_count(self, start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[dict]:
         """Get pull request counts grouped by state"""
+        df = self._read_prs()
+        if df.empty:
+            return []
+        
+        # Filter by date range if provided
         if start_date and end_date:
-            result = self.conn.execute("""
-                SELECT state, COUNT(*) as count
-                FROM pull_requests
-                WHERE created_at BETWEEN ? AND ?
-                GROUP BY state
-                ORDER BY count DESC
-            """, [start_date, end_date])
-        else:
-            result = self.conn.execute("""
-                SELECT state, COUNT(*) as count
-                FROM pull_requests
-                GROUP BY state
-                ORDER BY count DESC
-            """)
-        return result.fetchall()
+            df['created_at'] = pd.to_datetime(df['created_at'])
+            mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
+            df = df[mask]
+        
+        # Group by state and count
+        state_counts = df.groupby('state').size().reset_index(name='count')
+        state_counts = state_counts.sort_values('count', ascending=False)
+        
+        return state_counts.to_dict('records')
     
     def get_daily_pull_requests_count(self, start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[dict]:
         """Get daily pull request counts"""
+        df = self._read_prs()
+        if df.empty:
+            return []
+        
+        df['created_at'] = pd.to_datetime(df['created_at'])
+        
+        # Filter by date range if provided
         if start_date and end_date:
-            result = self.conn.execute("""
-                SELECT DATE(created_at) as day, COUNT(*) as count
-                FROM pull_requests
-                WHERE created_at BETWEEN ? AND ?
-                GROUP BY DATE(created_at)
-                ORDER BY day
-            """, [start_date, end_date])
-        else:
-            result = self.conn.execute("""
-                SELECT DATE(created_at) as day, COUNT(*) as count
-                FROM pull_requests
-                GROUP BY DATE(created_at)
-                ORDER BY day
-            """)
-        return result.fetchall()
+            mask = (df['created_at'].dt.date >= start_date) & (df['created_at'].dt.date <= end_date)
+            df = df[mask]
+        
+        # Group by date
+        df['day'] = df['created_at'].dt.date
+        daily_counts = df.groupby('day').size().reset_index(name='count')
+        daily_counts = daily_counts.sort_values('day')
+        
+        # Convert day back to string for JSON serialization
+        daily_counts['day'] = daily_counts['day'].astype(str)
+        
+        return daily_counts.to_dict('records')
     
     def get_date_range(self) -> tuple:
         """Get min and max dates from pull requests"""
-        result = self.conn.execute("""
-            SELECT MIN(created_at) as min_date, MAX(created_at) as max_date 
-            FROM pull_requests 
-            WHERE created_at IS NOT NULL
-        """)
-        return result.fetchone()
+        df = self._read_prs()
+        if df.empty:
+            return (None, None)
+        
+        df['created_at'] = pd.to_datetime(df['created_at'])
+        df = df.dropna(subset=['created_at'])
+        
+        if df.empty:
+            return (None, None)
+        
+        min_date = df['created_at'].min()
+        max_date = df['created_at'].max()
+        
+        return (min_date, max_date)
     
     def close(self):
-        """Close database connection"""
-        self.conn.close()
+        """No connection to close for parquet files"""
+        pass
