@@ -6,9 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-# Claude
-.claude
-
 # Distribution / packaging
 .Python
 build/
@@ -287,4 +284,6 @@ settings.json
 # Large data files
 *.bin
 *.dat
-EOF < /dev/null
+# Act (GitHub Actions local runner)
+bin/
+.actrc
