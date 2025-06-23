@@ -5,7 +5,12 @@
       "Bash(docker compose:*)",
       "Bash(rg:*)",
       "Bash(grep:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(chmod:*)",
+      "Bash(pip install:*)",
+      "Bash(curl:*)",
+      "Bash(export PATH=$PWD/bin:$PATH)",
+      "Bash(act:*)"
     ],
     "deny": []
   }

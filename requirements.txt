@@ -5,3 +5,7 @@ plotly
 pygithub
 pydantic
 supabase
+pytest
+pytest-mock
+pytest-cov
+pyarrow
