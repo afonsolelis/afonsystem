@@ -3,5 +3,8 @@ pandas
 python-dotenv
 plotly
 pygithub
-duckdb
 pydantic
+supabase
+pyarrow
+fastparquet
+duckdb

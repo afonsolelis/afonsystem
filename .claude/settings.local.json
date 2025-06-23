@@ -5,7 +5,10 @@
       "Bash(rm:*)",
       "Bash(mv:*)",
       "Bash(find:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(python:*)",
+      "Bash(grep:*)",
+      "Bash(touch:*)"
     ],
     "deny": []
   }

@@ -5,9 +5,9 @@ from repositories.pull_request_repository import PullRequestRepository
 
 
 class AnalyticsService:
-    def __init__(self, db_path: str):
-        self.commit_repo = CommitRepository(db_path)
-        self.pr_repo = PullRequestRepository(db_path)
+    def __init__(self, dataset_path: str):
+        self.commit_repo = CommitRepository(dataset_path)
+        self.pr_repo = PullRequestRepository(dataset_path)
     
     def get_commit_kpis(self, start_date: date, end_date: date) -> Dict[str, int]:
         """Get commit KPIs for a date range"""
