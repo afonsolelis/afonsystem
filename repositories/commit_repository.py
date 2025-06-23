@@ -26,10 +26,8 @@ class CommitRepository:
         if df.empty:
             return []
         
-        # Convert date column to datetime if it's not already
         df['date'] = pd.to_datetime(df['date'])
         
-        # Filter by date range
         mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
         filtered_df = df[mask].sort_values('date', ascending=False)
         
@@ -63,13 +61,11 @@ class CommitRepository:
         if df.empty:
             return 0
         
-        # Filter by date range if provided
         if start_date and end_date:
             df['date'] = pd.to_datetime(df['date'])
             mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
             df = df[mask]
         
-        # Filter by type prefix
         type_mask = df['message'].str.lower().str.startswith(type_prefix.lower())
         return len(df[type_mask])
     
@@ -79,13 +75,11 @@ class CommitRepository:
         if df.empty:
             return []
         
-        # Filter by date range if provided
         if start_date and end_date:
             df['date'] = pd.to_datetime(df['date'])
             mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
             df = df[mask]
         
-        # Group by author and count
         author_counts = df.groupby('author').size().reset_index(name='count')
         author_counts = author_counts.sort_values('count', ascending=False)
         
@@ -97,13 +91,11 @@ class CommitRepository:
         if df.empty:
             return []
         
-        # Filter by date range if provided
         if start_date and end_date:
             df['date'] = pd.to_datetime(df['date'])
             mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
             df = df[mask]
         
-        # Categorize commits by type
         def categorize_commit(message):
             message_lower = message.lower()
             if message_lower.startswith('feat'):
@@ -137,17 +129,14 @@ class CommitRepository:
         
         df['date'] = pd.to_datetime(df['date'])
         
-        # Filter by date range if provided
         if start_date and end_date:
             mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
             df = df[mask]
         
-        # Group by date
         df['day'] = df['date'].dt.date
         daily_counts = df.groupby('day').size().reset_index(name='count')
         daily_counts = daily_counts.sort_values('day')
         
-        # Convert day back to string for JSON serialization
         daily_counts['day'] = daily_counts['day'].astype(str)
         
         return daily_counts.to_dict('records')
