@@ -1,7 +1,5 @@
 import os
-import time
 import re
-import pandas as pd
 from typing import List, Optional, Dict, Callable
 from datetime import datetime
 from github import Github
