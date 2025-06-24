@@ -6,8 +6,6 @@ from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import tempfile
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 load_dotenv()
 
@@ -125,21 +123,28 @@ class SnapshotManager:
             
             snapshots = []
             for item in result:
-                if item['name'].startswith(f'snapshot_{safe_repo_name}_'):
+                item_name = item['name']
+                
+                # Check if this is a snapshot directory for the specific repository
+                if item_name.startswith(f'snapshot_{safe_repo_name}_'):
                     try:
-                        metadata = self.get_snapshot_metadata(item['name'], quarter)
+                        metadata = self.get_snapshot_metadata(item_name, quarter)
                         if metadata:
-                            snapshots.append(metadata)
+                            # Double check that this snapshot really belongs to this repo
+                            metadata_repo = metadata.get('repository_name', '')
+                            if metadata_repo == repo_name or not metadata_repo:
+                                snapshots.append(metadata)
                     except Exception as e:
+                        # Fallback parsing for backward compatibility
                         try:
-                            parts = item['name'].split('_')
+                            parts = item_name.split('_')
                             if len(parts) >= 3:
                                 timestamp = '_'.join(parts[-2:])
                             else:
                                 timestamp = 'unknown'
                             
                             snapshots.append({
-                                'snapshot_id': item['name'],
+                                'snapshot_id': item_name,
                                 'repository_name': repo_name,
                                 'timestamp': timestamp,
                                 'created_at': item.get('created_at', ''),
