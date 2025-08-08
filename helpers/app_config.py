@@ -30,4 +30,4 @@ def setup_page_config():
     st.title("📊 Análise de Repositórios GitHub")
 
 def get_available_quarters():
-    return ["2025-1B"]
+    return ["2025-2A"]
