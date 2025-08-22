@@ -203,9 +203,18 @@ def render_individual_analysis(filtered_commits):
 def render_recent_commits_table(filtered_commits):
     """Render recent commits table"""
     st.subheader("📝 Últimos Commits")
-    display_commits = filtered_commits[['date', 'author', 'message']].head(20) if len(filtered_commits) > 0 else pd.DataFrame()
-    if not display_commits.empty:
-        st.dataframe(display_commits, use_container_width=True)
+    if len(filtered_commits) > 0:
+        display_commits = filtered_commits[['date', 'author', 'message']].head(20).copy()
+        
+        # Se há URL, adiciona coluna link clicável
+        if 'url' in filtered_commits.columns:
+            display_commits['link'] = filtered_commits['url'].head(20)
+        
+        st.dataframe(display_commits, use_container_width=True, column_config={
+            'link': st.column_config.LinkColumn('Link', display_text="Abrir")
+        } if 'url' in filtered_commits.columns else None)
+    else:
+        st.dataframe(pd.DataFrame(), use_container_width=True)
 
 def render_pull_request_metrics(prs_df):
     """Render pull request metrics"""
@@ -314,9 +323,12 @@ def render_recent_pull_requests_table(prs_df):
     
     st.subheader("🔀 Últimos Pull Requests")
     
-    display_cols = ['created_at', 'author', 'title', 'state']
-    available_cols = [col for col in display_cols if col in prs_df.columns]
+    display_prs = prs_df[['created_at', 'author', 'title', 'state']].head(20).copy()
     
-    if available_cols:
-        display_prs = prs_df[available_cols].head(20)
-        st.dataframe(display_prs, use_container_width=True)
+    # Se há URL, adiciona coluna link clicável
+    if 'url' in prs_df.columns:
+        display_prs['link'] = prs_df['url'].head(20)
+    
+    st.dataframe(display_prs, use_container_width=True, column_config={
+        'link': st.column_config.LinkColumn('Link', display_text="Abrir")
+    } if 'url' in prs_df.columns else None)
