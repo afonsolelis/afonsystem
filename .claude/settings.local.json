@@ -10,7 +10,8 @@
       "Bash(pip install:*)",
       "Bash(curl:*)",
       "Bash(export PATH=$PWD/bin:$PATH)",
-      "Bash(act:*)"
+      "Bash(act:*)",
+      "Bash(streamlit run:*)"
     ],
     "deny": []
   }
