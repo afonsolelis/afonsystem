@@ -32,7 +32,7 @@ __all__ = [
     'render_daily_commits_chart',
     'render_date_filter',
     'render_individual_analysis',
-    'render_recent_commits_table',
+    'render_all_commits_table',
     'render_pull_request_metrics',
     'render_pull_request_state_chart',
     'render_pull_request_authors_chart',
