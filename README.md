@@ -1,6 +1,6 @@
 # AfonSystem - Sistema de Análise de Repositórios GitHub
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io/)
 [![Supabase](https://img.shields.io/badge/Supabase-Cloud-orange.svg)](https://supabase.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -357,7 +357,7 @@ C4Dynamic
 
 ### RNF07 - Compatibilidade
 - **RNF07.1**: O sistema deve funcionar em navegadores modernos
-- **RNF07.2**: O sistema deve ser compatível com Python 3.8+
+- **RNF07.2**: O sistema deve ser compatível com Python 3.13
 - **RNF07.3**: O sistema deve funcionar em Windows, Linux e macOS
 - **RNF07.4**: O sistema deve ser compatível com diferentes resoluções
 
@@ -383,7 +383,7 @@ C4Dynamic
 
 ### Pré-requisitos
 
-- Python 3.8 ou superior
+- Python 3.13 (devido a compatibilidade com dependências)
 - Conta no GitHub com token de acesso
 - Projeto Supabase configurado
 - Git instalado
@@ -443,11 +443,21 @@ C4Dynamic
 
 ### Execução
 
+Para sistemas com múltiplas versões do Python, use o script fornecido:
+
 ```bash
-streamlit run app.py
+./run_app.sh
+```
+
+Ou execute diretamente com Python 3.13:
+
+```bash
+python3.13 -m streamlit run app.py
 ```
 
 O sistema estará disponível em: http://localhost:8501
+
+**Nota**: O sistema requer Python 3.13 devido a compatibilidade com dependências. Se você encontrar problemas com numpy, certifique-se de estar usando a versão correta do Python.
 
 ## 📖 Uso
 

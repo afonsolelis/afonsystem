@@ -9,3 +9,4 @@ pytest
 pytest-mock
 pytest-cov
 pyarrow
+numpy==1.26.4

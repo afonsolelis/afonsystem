@@ -200,19 +200,25 @@ def render_individual_analysis(filtered_commits):
                         )
                         st.plotly_chart(fig_author, use_container_width=True)
 
-def render_recent_commits_table(filtered_commits):
-    """Render recent commits table"""
-    st.subheader("📝 Últimos Commits")
+def render_all_commits_table(filtered_commits):
+    """Render all commits table"""
+    st.subheader("📝 Todos os Commits")
     if len(filtered_commits) > 0:
-        display_commits = filtered_commits[['date', 'author', 'message']].head(20).copy()
+        # Sort by date descending (most recent first)
+        sorted_commits = filtered_commits.sort_values('date', ascending=False)
+        display_commits = sorted_commits[['date', 'author', 'message']].copy()
         
         # Se há URL, adiciona coluna link clicável
         if 'url' in filtered_commits.columns:
-            display_commits['link'] = filtered_commits['url'].head(20)
+            display_commits['link'] = sorted_commits['url'].values
         
         st.dataframe(display_commits, use_container_width=True, column_config={
             'link': st.column_config.LinkColumn('Link', display_text="Abrir")
         } if 'url' in filtered_commits.columns else None)
+        
+        # Show total count
+        total_commits = len(filtered_commits)
+        st.caption(f"Mostrando todos os {total_commits} commits.")
     else:
         st.dataframe(pd.DataFrame(), use_container_width=True)
 
@@ -317,11 +323,11 @@ def render_pull_request_timeline(prs_df):
     st.plotly_chart(fig_line, use_container_width=True)
 
 def render_recent_pull_requests_table(prs_df):
-    """Render recent pull requests table"""
+    """Render recent pull requests table (last 20)"""
     if prs_df is None or len(prs_df) == 0:
         return
     
-    st.subheader("🔀 Últimos Pull Requests")
+    st.subheader("🔀 Últimos Pull Requests (20 mais recentes)")
     
     display_prs = prs_df[['created_at', 'author', 'title', 'state']].head(20).copy()
     
@@ -332,3 +338,7 @@ def render_recent_pull_requests_table(prs_df):
     st.dataframe(display_prs, use_container_width=True, column_config={
         'link': st.column_config.LinkColumn('Link', display_text="Abrir")
     } if 'url' in prs_df.columns else None)
+    
+    # Show total count
+    total_prs = len(prs_df)
+    st.caption(f"Mostrando 20 dos {total_prs} pull requests.")

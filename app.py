@@ -81,7 +81,7 @@ if supabase_helper:
             else:
                 st.warning(f"Nenhum commit encontrado no período selecionado ({start_date} a {end_date})")
             
-            render_recent_commits_table(filtered_commits)
+            render_all_commits_table(filtered_commits)
             
             st.divider()
             
