@@ -2,7 +2,7 @@ streamlit
 pandas
 python-dotenv
 plotly
-pygithub
+PyGithub
 pydantic
 supabase
 pytest
