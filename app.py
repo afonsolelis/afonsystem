@@ -93,7 +93,7 @@ if supabase_helper:
                     render_pull_request_state_chart(prs_df)
                     render_pull_request_authors_chart(prs_df)
                     render_pull_request_timeline(prs_df)
-                    render_recent_pull_requests_table(prs_df)
+                    render_all_pull_requests_table(prs_df)
             
     else:
         st.info("💡 Selecione um snapshot acima para visualizar análises e gráficos.")

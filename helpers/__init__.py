@@ -37,5 +37,5 @@ __all__ = [
     'render_pull_request_state_chart',
     'render_pull_request_authors_chart',
     'render_pull_request_timeline',
-    'render_recent_pull_requests_table'
+    'render_all_pull_requests_table'
 ]

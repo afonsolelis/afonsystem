@@ -322,18 +322,20 @@ def render_pull_request_timeline(prs_df):
     )
     st.plotly_chart(fig_line, use_container_width=True)
 
-def render_recent_pull_requests_table(prs_df):
-    """Render recent pull requests table (last 20)"""
+def render_all_pull_requests_table(prs_df):
+    """Render all pull requests table"""
     if prs_df is None or len(prs_df) == 0:
         return
     
-    st.subheader("🔀 Últimos Pull Requests (20 mais recentes)")
+    st.subheader("🔀 Todos os Pull Requests")
     
-    display_prs = prs_df[['created_at', 'author', 'title', 'state']].head(20).copy()
+    # Sort by created_at descending (most recent first)
+    sorted_prs = prs_df.sort_values('created_at', ascending=False)
+    display_prs = sorted_prs[['created_at', 'author', 'title', 'state']].copy()
     
     # Se há URL, adiciona coluna link clicável
     if 'url' in prs_df.columns:
-        display_prs['link'] = prs_df['url'].head(20)
+        display_prs['link'] = sorted_prs['url'].values
     
     st.dataframe(display_prs, use_container_width=True, column_config={
         'link': st.column_config.LinkColumn('Link', display_text="Abrir")
@@ -341,4 +343,4 @@ def render_recent_pull_requests_table(prs_df):
     
     # Show total count
     total_prs = len(prs_df)
-    st.caption(f"Mostrando 20 dos {total_prs} pull requests.")
+    st.caption(f"Mostrando todos os {total_prs} pull requests.")
