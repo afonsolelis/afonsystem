@@ -1,5 +1,11 @@
 import streamlit as st
+import logging
 from helpers import *
+from helpers.ui_components import render_all_pull_requests_table
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 setup_page_config()
 
@@ -93,7 +99,31 @@ if supabase_helper:
                     render_pull_request_state_chart(prs_df)
                     render_pull_request_authors_chart(prs_df)
                     render_pull_request_timeline(prs_df)
-                    render_all_pull_requests_table(prs_df)
+                    
+                    # Render pull requests table with fallback mechanism
+                    # Note: This function sometimes fails in Streamlit Cloud deployment due to import issues
+                    # We've implemented a fallback mechanism to handle this environment-specific problem
+                    try:
+                        render_all_pull_requests_table(prs_df)
+                    except NameError:
+                        # Fallback: try explicit import
+                        try:
+                            from helpers.ui_components import render_all_pull_requests_table
+                            render_all_pull_requests_table(prs_df)
+                        except Exception as fallback_error:
+                            st.error("❌ Erro ao renderizar a tabela de pull requests.")
+                            st.info("💡 Esta é uma falha conhecida que ocorre apenas no ambiente de deploy.")
+                            if st.checkbox("Mostrar detalhes do erro"):
+                                st.write("Erro de importação:", str(fallback_error))
+                    except Exception as e:
+                        st.error("❌ Erro inesperado ao renderizar a tabela de pull requests.")
+                        st.info("💡 O restante da análise está funcionando normalmente.")
+                        if st.checkbox("Mostrar detalhes do erro"):
+                            st.write("Erro detalhado:", str(e))
+                else:
+                    st.info("Nenhum pull request encontrado para este snapshot.")
+            else:
+                st.info("Dados de pull requests não carregados para este snapshot.")
             
     else:
         st.info("💡 Selecione um snapshot acima para visualizar análises e gráficos.")
