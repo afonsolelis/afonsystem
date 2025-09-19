@@ -443,21 +443,27 @@ C4Dynamic
 
 ### Execução
 
-Para sistemas com múltiplas versões do Python, use o script fornecido:
+Para sistemas com múltiplas versões do Python, use o script fornecido (recomendado):
 
 ```bash
 ./run_app.sh
 ```
 
-Ou execute diretamente com Python 3.13:
+Ou execute diretamente com Python 3.12:
 
 ```bash
-python3.13 -m streamlit run app.py
+python3.12 -m streamlit run app.py
 ```
 
 O sistema estará disponível em: http://localhost:8501
 
-**Nota**: O sistema requer Python 3.13 devido a compatibilidade com dependências. Se você encontrar problemas com numpy, certifique-se de estar usando a versão correta do Python.
+**Nota**: O sistema requer Python 3.12 por compatibilidade com as dependências (por exemplo, `numpy==1.26.4`). Se aparecer erro envolvendo NumPy, verifique se está usando Python 3.12 e um ambiente virtual limpo criado pelo script `./run_app.sh`.
+
+### Solução de Problemas (NumPy)
+
+- Certifique-se de ter o `python3.12` instalado e no PATH.
+- Remova o ambiente virtual anterior se tiver sido criado com outra versão: `rm -rf .venv` e rode `./run_app.sh` novamente.
+- Evite executar com Python 3.13: a versão de NumPy fixada (`1.26.4`) não é compatível com 3.13.
 
 ## 📖 Uso
 

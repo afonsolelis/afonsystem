@@ -64,7 +64,7 @@ class SupabaseHelper:
         """
         return self.snapshot_manager.load_snapshot_data(snapshot_id, data_type, quarter)
     
-    def delete_parquet_snapshot(self, snapshot_id: str) -> bool:
+    def delete_parquet_snapshot(self, snapshot_id: str, quarter: str = None) -> bool:
         """
         Delete a Parquet snapshot
         
@@ -74,7 +74,7 @@ class SupabaseHelper:
         Returns:
             bool: True if successful
         """
-        return self.snapshot_manager.delete_snapshot(snapshot_id)
+        return self.snapshot_manager.delete_snapshot(snapshot_id, quarter)
     
     def get_snapshot_summary(self, repo_name: str) -> Dict:
         """

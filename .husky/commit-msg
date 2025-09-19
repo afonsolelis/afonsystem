@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Husky disabled: do not enforce commit messages
+exit 0

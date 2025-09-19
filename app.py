@@ -1,3 +1,74 @@
+import os
+import sys
+import subprocess
+import shutil
+
+
+def _bootstrap_env_and_reexec_if_needed():
+    # Avoid infinite loop
+    if os.environ.get("AFONSYSTEM_BOOTSTRAPPED") == "1":
+        # Also ensure we don't leak user site packages
+        os.environ.setdefault("PYTHONNOUSERSITE", "1")
+        return
+
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    venv_dir = os.path.join(project_root, ".venv")
+    venv_python = os.path.join(venv_dir, "bin", "python")
+
+    # Detect if we're already using the project's venv
+    in_project_venv = os.path.realpath(sys.prefix).startswith(os.path.realpath(venv_dir))
+    using_user_site = any(p.startswith(os.path.expanduser("~/.local/lib")) for p in sys.path)
+
+    if in_project_venv and not using_user_site:
+        os.environ.setdefault("PYTHONNOUSERSITE", "1")
+        return
+
+    # Prefer Python 3.12, then 3.13, then current interpreter
+    candidates = ["python3.12", "python3.13", sys.executable]
+    chosen = None
+    for cmd in candidates:
+        if shutil.which(cmd):
+            chosen = cmd
+            break
+
+    if chosen is None:
+        # If we can't find a python, continue as-is (will likely error), but at least avoid user site
+        os.environ.setdefault("PYTHONNOUSERSITE", "1")
+        return
+
+    # Create venv if missing
+    if not os.path.isdir(venv_dir):
+        try:
+            subprocess.run([chosen, "-m", "venv", venv_dir], check=True)
+        except Exception:
+            # As a fallback, try virtualenv if available
+            if shutil.which("virtualenv"):
+                subprocess.run(["virtualenv", "-p", chosen, venv_dir], check=True)
+            else:
+                # Can't create venv, continue but isolate user site
+                os.environ.setdefault("PYTHONNOUSERSITE", "1")
+                return
+
+    # Install requirements to the venv (best effort)
+    env = os.environ.copy()
+    env["PYTHONNOUSERSITE"] = "1"
+    reqs = os.path.join(project_root, "requirements.txt")
+    if os.path.isfile(reqs):
+        try:
+            subprocess.run([venv_python, "-m", "pip", "install", "--upgrade", "pip"], check=True, env=env)
+            subprocess.run([venv_python, "-m", "pip", "install", "-r", reqs], check=True, env=env)
+        except Exception:
+            pass
+
+    # Re-exec using the venv's python to run Streamlit
+    env["AFONSYSTEM_BOOTSTRAPPED"] = "1"
+    env["PYTHONNOUSERSITE"] = "1"
+    app_path = os.path.join(project_root, "app.py")
+    os.execv(venv_python, [venv_python, "-m", "streamlit", "run", app_path])
+
+
+_bootstrap_env_and_reexec_if_needed()
+
 import streamlit as st
 import logging
 from helpers import *

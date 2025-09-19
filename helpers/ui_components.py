@@ -34,8 +34,12 @@ def render_snapshot_selector(supabase_helper, selected_repo, selected_quarter):
     st.subheader("📸 Snapshots do Repositório")
     
     try:
-        with st.spinner("Carregando snapshots..."):
-            parquet_snapshots = supabase_helper.list_parquet_snapshots(repo_name=selected_repo, quarter=selected_quarter)
+        cache_key = f"snapshots_cache::{selected_quarter}::{selected_repo}"
+        parquet_snapshots = st.session_state.get(cache_key)
+        if parquet_snapshots is None:
+            with st.spinner("Carregando snapshots..."):
+                parquet_snapshots = supabase_helper.list_parquet_snapshots(repo_name=selected_repo, quarter=selected_quarter)
+                st.session_state[cache_key] = parquet_snapshots
             
         if parquet_snapshots:
             snapshot_options = []

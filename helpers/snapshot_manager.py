@@ -114,51 +114,82 @@ class SnapshotManager:
             List of snapshot metadata dictionaries
         """
         try:
-            result = self.client.storage.from_(self.bucket_name).list(quarter)
-            
+            # Paginação para listar todo o conteúdo do trimestre
+            result = self._list_all(quarter)
+
             if not result:
                 return []
-            
-            safe_repo_name = repo_name.replace('/', '_').replace('-', '_')
-            
-            snapshots = []
+
+            snapshots: List[Dict] = []
+
+            # Heurísticas de compatibilidade: nomes possíveis de diretório por variações antigas
+            safe_repo_name_current = repo_name.replace('/', '_').replace('-', '_')
+            safe_repo_name_lower = safe_repo_name_current.lower()
+
             for item in result:
-                item_name = item['name']
-                
-                # Check if this is a snapshot directory for the specific repository
-                if item_name.startswith(f'snapshot_{safe_repo_name}_'):
-                    try:
-                        metadata = self.get_snapshot_metadata(item_name, quarter)
-                        if metadata:
-                            # Double check that this snapshot really belongs to this repo
-                            metadata_repo = metadata.get('repository_name', '')
-                            if metadata_repo == repo_name or not metadata_repo:
-                                snapshots.append(metadata)
-                    except Exception as e:
-                        # Fallback parsing for backward compatibility
-                        try:
-                            parts = item_name.split('_')
-                            if len(parts) >= 3:
-                                timestamp = '_'.join(parts[-2:])
-                            else:
-                                timestamp = 'unknown'
-                            
-                            snapshots.append({
-                                'snapshot_id': item_name,
-                                'repository_name': repo_name,
-                                'timestamp': timestamp,
-                                'created_at': item.get('created_at', ''),
-                                'commits_count': 0,
-                                'pull_requests_count': 0
-                            })
-                        except:
-                            continue
-            
+                item_name = item.get('name') or ''
+
+                # Considera apenas diretórios de snapshot
+                if not item_name.startswith('snapshot_'):
+                    continue
+
+                # Pré-filtra por prefixo do repositório para evitar downloads desnecessários de metadata
+                matches_repo_prefix = (
+                    item_name.startswith(f'snapshot_{safe_repo_name_current}_') or
+                    item_name.startswith(f'snapshot_{safe_repo_name_lower}_')
+                )
+                if not matches_repo_prefix:
+                    # Ignora snapshots de outros repositórios sem tentar baixar metadata
+                    continue
+
+                # Tenta ler metadata para enriquecer (contagens etc.)
+                metadata = self.get_snapshot_metadata(item_name, quarter)
+
+                if metadata and metadata.get('repository_name'):
+                    if metadata['repository_name'] == repo_name:
+                        snapshots.append(metadata)
+                    # Se metadata existe mas é de outro repo (nome coincidente), ignora
+                    continue
+
+                # Fallback por nome quando não há metadata
+                parts = item_name.split('_')
+                timestamp = 'unknown'
+                if len(parts) >= 3:
+                    timestamp = '_'.join(parts[-2:])
+
+                snapshots.append({
+                    'snapshot_id': item_name,
+                    'repository_name': repo_name,
+                    'timestamp': timestamp,
+                    'created_at': item.get('created_at', ''),
+                    'commits_count': 0,
+                    'pull_requests_count': 0
+                })
+
             snapshots.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
             return snapshots
-            
-        except Exception as e:
+
+        except Exception:
             return []
+
+    def _list_all(self, path: str) -> List[Dict]:
+        """List all items under a path using pagination (limit/offset)."""
+        items: List[Dict] = []
+        limit = 100
+        offset = 0
+        while True:
+            batch = self.client.storage.from_(self.bucket_name).list(path, {
+                'limit': limit,
+                'offset': offset,
+                'sortBy': {'column': 'name', 'order': 'asc'}
+            })
+            if not batch:
+                break
+            items.extend(batch)
+            if len(batch) < limit:
+                break
+            offset += limit
+        return items
     
     def get_snapshot_metadata(self, snapshot_id: str, quarter: str = "2025-1B") -> Optional[Dict]:
         """
@@ -217,7 +248,7 @@ class SnapshotManager:
         except Exception as e:
             raise Exception(f"Error loading {data_type} data from snapshot {snapshot_id}: {str(e)}")
     
-    def delete_snapshot(self, snapshot_id: str) -> bool:
+    def delete_snapshot(self, snapshot_id: str, quarter: Optional[str] = None) -> bool:
         """
         Delete a complete snapshot (all files)
         
@@ -228,17 +259,31 @@ class SnapshotManager:
             bool: True if deletion was successful
         """
         try:
-            files_to_delete = [
+            # Monta caminhos considerando o trimestre; mantém compatibilidade tentando caminhos antigos
+            candidate_paths: List[str] = []
+            if quarter:
+                candidate_paths.extend([
+                    f"{quarter}/{snapshot_id}/commits.parquet",
+                    f"{quarter}/{snapshot_id}/pull_requests.parquet",
+                    f"{quarter}/{snapshot_id}/metadata.json",
+                ])
+            # Caminhos sem trimestre (legado)
+            candidate_paths.extend([
                 f"{snapshot_id}/commits.parquet",
-                f"{snapshot_id}/pull_requests.parquet", 
-                f"{snapshot_id}/metadata.json"
-            ]
-            
-            for file_path in files_to_delete:
-                try:
-                    self.client.storage.from_(self.bucket_name).remove([file_path])
-                except:
-                    pass
+                f"{snapshot_id}/pull_requests.parquet",
+                f"{snapshot_id}/metadata.json",
+            ])
+
+            # Remove em lotes, ignorando erros de arquivos inexistentes
+            try:
+                self.client.storage.from_(self.bucket_name).remove(candidate_paths)
+            except Exception:
+                # Tenta individualmente para maior tolerância
+                for file_path in candidate_paths:
+                    try:
+                        self.client.storage.from_(self.bucket_name).remove([file_path])
+                    except Exception:
+                        pass
             
             return True
             
