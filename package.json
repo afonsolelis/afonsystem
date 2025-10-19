@@ -1,25 +1,14 @@
 {
   "name": "afonsystem",
-  "version": "1.0.0",
-  "description": "[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/downloads/) [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io/) [![Supabase](https://img.shields.io/badge/Supabase-Cloud-orange.svg)](https://supabase.com/) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/index.js",
+    "migrate": "clickhouse-client --query \"$(<migrations/001_init.sql)\" || true"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/afonsolelis/afonsystem.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/afonsolelis/afonsystem/issues"
-  },
-  "homepage": "https://github.com/afonsolelis/afonsystem#readme",
-  "devDependencies": {}
+  "dependencies": {
+    "@clickhouse/client": "^0.2.9",
+    "ejs": "^3.1.10"
+  }
 }

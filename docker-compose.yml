@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: afonsystem-clickhouse
+    environment:
+      CLICKHOUSE_DB: afonsystem
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./data/clickhouse:/var/lib/clickhouse
+      - ./logs/clickhouse:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    image: clickhouse/clickhouse-client:24.8
+    container_name: afonsystem-migrate
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations:ro
+    entrypoint: ["bash", "-lc", "clickhouse-client --host clickhouse --multiquery < /migrations/001_init.sql"]
+
+
