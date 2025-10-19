@@ -1,0 +1,70 @@
+# Node
+node_modules/
+.pnpm-store/
+.npm/
+.npm-cache/
+.yarn/
+.pnp.cjs
+.pnp.loader.mjs
+.pnp.data.json
+
+# Builds
+.dist/
+dist/
+build/
+.esbuild/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+.vercel/
+.nextcache/
+coverage/
+
+# Logs & runtime
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Env
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.envrc
+
+# Docker/ClickHouse data
+/data/
+/data/*
+logs/clickhouse/
+data/clickhouse/
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python (legacy remnants)
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Misc
+.tmp/
+.temp/
+*.tmp
