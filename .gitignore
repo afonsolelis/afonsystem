@@ -262,6 +262,7 @@ snapshots/
 exports/
 uploads/
 downloads/
+data/
 
 # API keys and secrets (additional protection)
 *secret*
