@@ -3,20 +3,18 @@ from .data_collector import GitHubDataCollector as DataCollector
 from .data_formatter import DataFormatter
 from .database_helper import DatabaseHelper
 from .snapshot_manager import SnapshotManager
-from .supabase_helper import SupabaseHelper
 from .app_config import *
 from .data_analysis import *
 from .ui_components import *
 
 __all__ = [
     'AnalyticsService',
-    'DataCollector', 
+    'DataCollector',
     'DataFormatter',
     'DatabaseHelper',
     'SnapshotManager',
-    'SupabaseHelper',
     'get_data_collector',
-    'get_supabase_helper',
+    'get_snapshot_manager',
     'get_available_repos',
     'setup_page_config',
     'get_available_quarters',

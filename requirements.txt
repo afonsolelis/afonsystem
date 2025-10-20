@@ -3,10 +3,6 @@ python-dotenv
 plotly
 PyGithub
 pydantic
-supabase
-pytest
-pytest-mock
-pytest-cov
 pyarrow
 
 # Compatibilidade cruzada Python 3.12 e 3.13

@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-# Husky disabled: allow commits without checks
-exit 0

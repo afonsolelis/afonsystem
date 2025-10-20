@@ -1,6 +1,6 @@
 import streamlit as st
 from .data_collector import GitHubDataCollector
-from .supabase_helper import SupabaseHelper
+from .snapshot_manager import SnapshotManager
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,15 +10,9 @@ def get_data_collector():
     collector = GitHubDataCollector()
     return collector
 
-@st.cache_resource  
-def get_supabase_helper():
-    try:
-        helper = SupabaseHelper()
-        return helper
-    except Exception as e:
-        st.error(f"Failed to initialize Supabase: {e}")
-        st.info("💡 Make sure your .env file has SUPABASE_URL and SUPABASE_ANON_KEY configured")
-        return None
+@st.cache_resource
+def get_snapshot_manager():
+    return SnapshotManager()
 
 @st.cache_data
 def get_available_repos():
@@ -30,4 +24,4 @@ def setup_page_config():
     st.title("📊 Análise de Repositórios GitHub")
 
 def get_available_quarters():
-    return ["2025-2A"]
+    return ["2025-2B"]
