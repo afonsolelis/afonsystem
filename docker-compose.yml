@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  streamlit:
+    image: python:3.12
+    container_name: afonsystem-streamlit
+    working_dir: /app
+    env_file:
+      - .env
+    volumes:
+      - ./:/app
+    ports:
+      - "8501:8501"
+    command: bash -lc "pip install --no-cache-dir -r requirements.txt && streamlit run app.py --server.port=8501 --server.address=0.0.0.0"
+    restart: unless-stopped
+
+
