@@ -8,9 +8,13 @@ services:
       - .env
     volumes:
       - ./:/app
+      - app_data:/app/data
     ports:
       - "8501:8501"
     command: bash -lc "pip install --no-cache-dir -r requirements.txt && streamlit run app.py --server.port=8501 --server.address=0.0.0.0"
     restart: unless-stopped
+
+volumes:
+  app_data:
 
 
