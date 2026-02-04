@@ -30,6 +30,9 @@
       <div class="col-md-2 d-flex gap-2">
         <button type="submit" class="btn btn-primary flex-fill">Filtrar</button>
         <a href="<%= typeof action !== 'undefined' ? action : '/' %>" class="btn btn-outline-secondary flex-fill">Limpar</a>
+        <button type="button" id="btn-export-json" class="btn btn-outline-success flex-fill" title="Exportar JSON">
+          <i class="bi bi-download"></i> JSON
+        </button>
       </div>
     </form>
   </div>

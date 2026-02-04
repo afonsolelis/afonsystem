@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     db.collection('merge_requests').countDocuments(mrFilter),
     db.collection('issues').countDocuments(issueFilter),
     db.collection('projects').find({}, { projection: { project_id: 1, name: 1, path_with_namespace: 1, default_branch: 1, created_at: 1 } }).toArray(),
-    db.collection('members').distinct('name'),
+    db.collection('members').distinct('name', { access_level: { $lt: 50 } }),
   ]);
 
   res.render('pages/dashboard', {
