@@ -1,38 +1,40 @@
 <div class="card mb-4">
   <div class="card-body">
-    <form method="GET" action="<%= typeof action !== 'undefined' ? action : '/' %>" class="row g-3 align-items-end">
-      <div class="col-md-3">
-        <label class="form-label">Projeto</label>
-        <select name="project_id" class="form-select">
-          <option value="">Todos</option>
-          <% projectsList.forEach(function(p) { %>
-            <option value="<%= p.project_id %>" <%= selectedProject == p.project_id ? 'selected' : '' %>><%= p.path_with_namespace %></option>
-          <% }) %>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">Aluno</label>
-        <select name="username" class="form-select">
-          <option value="">Todos</option>
-          <% membersList.forEach(function(m) { %>
-            <option value="<%= m %>" <%= selectedUsername == m ? 'selected' : '' %>><%= m %></option>
-          <% }) %>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">De</label>
-        <input type="date" name="from" class="form-control" value="<%= selectedFrom || '' %>">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">At&eacute;</label>
-        <input type="date" name="to" class="form-control" value="<%= selectedTo || '' %>">
-      </div>
-      <div class="col-md-2 d-flex gap-2">
-        <button type="submit" class="btn btn-primary flex-fill">Filtrar</button>
-        <a href="<%= typeof action !== 'undefined' ? action : '/' %>" class="btn btn-outline-secondary flex-fill">Limpar</a>
-        <button type="button" id="btn-export-json" class="btn btn-outline-success flex-fill" title="Exportar JSON">
+    <form method="GET" action="<%= typeof action !== 'undefined' ? action : '/' %>">
+      <div class="d-flex gap-2 mb-3">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="<%= typeof action !== 'undefined' ? action : '/' %>" class="btn btn-outline-secondary">Limpar</a>
+        <button type="button" id="btn-export-json" class="btn btn-outline-success" title="Exportar JSON">
           <i class="bi bi-download"></i> JSON
         </button>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Projeto</label>
+          <select name="project_id" class="form-select">
+            <option value="">Todos</option>
+            <% projectsList.forEach(function(p) { %>
+              <option value="<%= p.project_id %>" <%= selectedProject == p.project_id ? 'selected' : '' %>><%= p.path_with_namespace %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Aluno</label>
+          <select name="username" class="form-select">
+            <option value="">Todos</option>
+            <% membersList.forEach(function(m) { %>
+              <option value="<%= m %>" <%= selectedUsername == m ? 'selected' : '' %>><%= m %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">De</label>
+          <input type="date" name="from" class="form-control" value="<%= selectedFrom || '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">At&eacute;</label>
+          <input type="date" name="to" class="form-control" value="<%= selectedTo || '' %>">
+        </div>
       </div>
     </form>
   </div>

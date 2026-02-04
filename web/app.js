@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 const express = require('express');
 const { connectDB, closeDB } = require('./config/db');
+const { startScheduler } = require('./services/scheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,7 @@ app.use((req, res) => {
 
 async function start() {
   await connectDB();
+  startScheduler();
   app.listen(PORT, () => console.log(`Dashboard: http://localhost:${PORT}`));
 }
 
