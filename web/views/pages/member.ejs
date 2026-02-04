@@ -1,0 +1,191 @@
+<%- include('../layout-head', { title: member.name }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2><%= member.name %></h2>
+    <p class="text-muted mb-0">@<%= member.username %></p>
+  </div>
+  <a href="/" class="btn btn-outline-secondary">Voltar</a>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3><%= projects.length %></h3>
+        <p class="text-muted mb-0">Projetos</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3><%= commits.length %></h3>
+        <p class="text-muted mb-0">Commits</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3><%= mergeRequests.length %></h3>
+        <p class="text-muted mb-0">Merge Requests</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3><%= issues.length %></h3>
+        <p class="text-muted mb-0">Issues</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Commits por Projeto</div>
+      <div class="card-body chart-container">
+        <canvas id="chartCommitsByProject"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Linhas por Projeto</div>
+      <div class="card-body chart-container">
+        <canvas id="chartLinesByProject"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">Projetos</div>
+      <div class="card-body">
+        <table class="table table-hover">
+          <thead><tr><th>Projeto</th><th>Commits</th><th>Adicionadas</th><th>Removidas</th><th></th></tr></thead>
+          <tbody>
+            <% projects.forEach(function(p) { var s = commitsByProject[p.project_id] || { count: 0, additions: 0, deletions: 0 }; %>
+            <tr>
+              <td><%= p.path_with_namespace %></td>
+              <td><%= s.count %></td>
+              <td><span class="badge badge-additions">+<%= s.additions %></span></td>
+              <td><span class="badge badge-deletions">-<%= s.deletions %></span></td>
+              <td><a href="/projects/<%= p.project_id %>" class="btn btn-sm btn-outline-primary">Ver</a></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (commits.length > 0) { %>
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">Commits</div>
+      <div class="card-body">
+        <table class="table table-hover">
+          <thead><tr><th>ID</th><th>Projeto</th><th>Data</th><th>Mensagem</th><th>+/-</th></tr></thead>
+          <tbody>
+            <% commits.forEach(function(c) { var proj = projectMap[c.project_id]; %>
+            <tr>
+              <td><code><%= c.short_id %></code></td>
+              <td><%= proj ? proj.name : c.project_id %></td>
+              <td><%= c.committed_date ? c.committed_date.substring(0, 10) : '' %></td>
+              <td><%= c.message.substring(0, 80) %></td>
+              <td>
+                <span class="badge badge-additions">+<%= c.additions %></span>
+                <span class="badge badge-deletions">-<%= c.deletions %></span>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<% if (mergeRequests.length > 0) { %>
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">Merge Requests</div>
+      <div class="card-body">
+        <table class="table table-hover">
+          <thead><tr><th>#</th><th>Titulo</th><th>Status</th><th>Criado</th></tr></thead>
+          <tbody>
+            <% mergeRequests.forEach(function(mr) { %>
+            <tr>
+              <td>!<%= mr.iid %></td>
+              <td><%= mr.title %></td>
+              <td><span class="badge bg-<%= mr.state === 'merged' ? 'success' : mr.state === 'opened' ? 'primary' : 'secondary' %>"><%= mr.state %></span></td>
+              <td><%= mr.created_at ? mr.created_at.substring(0, 10) : '' %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<% if (issues.length > 0) { %>
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">Issues</div>
+      <div class="card-body">
+        <table class="table table-hover">
+          <thead><tr><th>#</th><th>Titulo</th><th>Status</th><th>Criado</th></tr></thead>
+          <tbody>
+            <% issues.forEach(function(i) { %>
+            <tr>
+              <td>#<%= i.iid %></td>
+              <td><%= i.title %></td>
+              <td><span class="badge bg-<%= i.state === 'opened' ? 'primary' : 'success' %>"><%= i.state %></span></td>
+              <td><%= i.created_at ? i.created_at.substring(0, 10) : '' %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<script>
+  var commitsByProject = <%- JSON.stringify(commitsByProject) %>;
+  var projectMap = <%- JSON.stringify(projectMap) %>;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var pids = Object.keys(commitsByProject);
+    if (pids.length > 0) {
+      var labels = pids.map(function(pid) { return projectMap[pid] ? projectMap[pid].name : pid; });
+      renderInlineChart('chartCommitsByProject', 'bar', {
+        labels: labels,
+        datasets: [{ label: 'Commits', data: pids.map(function(pid) { return commitsByProject[pid].count; }) }]
+      });
+      renderInlineChart('chartLinesByProject', 'bar', {
+        labels: labels,
+        datasets: [
+          { label: 'Adicionadas', data: pids.map(function(pid) { return commitsByProject[pid].additions; }), backgroundColor: '#198754' },
+          { label: 'Removidas', data: pids.map(function(pid) { return commitsByProject[pid].deletions; }), backgroundColor: '#dc3545' },
+        ]
+      });
+    }
+  });
+</script>
+
+<%- include('../layout-foot') %>

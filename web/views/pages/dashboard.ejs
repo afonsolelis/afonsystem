@@ -1,0 +1,110 @@
+<%- include('../layout-head', { title: 'Dashboard' }) %>
+
+<h2 class="mb-4">Dashboard</h2>
+
+<%- include('../partials/filters', {
+  projectsList,
+  membersList,
+  selectedProject,
+  selectedUsername,
+  selectedFrom,
+  selectedTo,
+  action: '/'
+}) %>
+
+<%- include('../partials/summary-cards', { stats }) %>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Commits por Aluno</div>
+      <div class="card-body chart-container">
+        <canvas data-chart="bar" data-endpoint="commits-per-student"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Commits ao Longo do Tempo</div>
+      <div class="card-body chart-container">
+        <canvas data-chart="line" data-endpoint="commits-over-time"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Linhas por Aluno</div>
+      <div class="card-body chart-container">
+        <canvas data-chart="bar" data-endpoint="lines-per-student"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-header">Merge Requests</div>
+      <div class="card-body chart-container">
+        <canvas data-chart="doughnut" data-endpoint="mr-status"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-header">Issues</div>
+      <div class="card-body chart-container">
+        <canvas data-chart="doughnut" data-endpoint="issue-status"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4" id="projects-section">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">Projetos</div>
+      <div class="card-body">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Projeto</th>
+              <th>Branch</th>
+              <th>Criado em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% projectsList.forEach(function(p) { %>
+            <tr>
+              <td><%= p.path_with_namespace %></td>
+              <td><%= p.default_branch || '-' %></td>
+              <td><%= p.created_at ? p.created_at.substring(0, 10) : '-' %></td>
+              <td><a href="/projects/<%= p.project_id %>" class="btn btn-sm btn-outline-primary">Ver</a></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4" id="members-section">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">Alunos</div>
+      <div class="card-body">
+        <div class="row">
+          <% membersList.forEach(function(name) { %>
+          <div class="col-md-3 col-sm-6 mb-2">
+            <a href="/members/<%= encodeURIComponent(name) %>" class="btn btn-outline-secondary btn-sm w-100"><%= name %></a>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../layout-foot') %>

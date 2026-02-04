@@ -1,0 +1,39 @@
+.chart-container {
+  position: relative;
+  min-height: 300px;
+}
+
+.card {
+  border: none;
+  border-radius: 0.5rem;
+}
+
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.08) !important;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: #6c757d;
+}
+
+.badge-additions {
+  background-color: #198754;
+  color: white;
+}
+
+.badge-deletions {
+  background-color: #dc3545;
+  color: white;
+}
+
+.no-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #adb5bd;
+  font-size: 0.9rem;
+}

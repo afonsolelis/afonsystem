@@ -1,0 +1,16 @@
+{
+  "name": "afonsystem-web",
+  "version": "1.0.0",
+  "description": "GitLab analytics dashboard",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "mongodb": "^6.3.0"
+  }
+}
